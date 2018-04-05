@@ -1,0 +1,639 @@
+#+OPTIONS: \n:t
+
+* Pre-installation
+** Printing this guide from Emacs
+Generate and export the txt file with "C-c C-e t l" then print it.
+
+** BIOS update
+Make sure that the latest BIOS update is installed (http://www.lenovo.com).
+
+** BIOS settings
+Make sure of the following:
+Security > Secure Boot > Secure Boot > Disabled
+Security > Virtualization > Intel (R) Virtualization Technology > Enabled
+
+** Create the Arch installer USB
+https://wiki.archlinux.org/index.php/USB_flash_installation_media
+
+** References
+General installation: https://wiki.archlinux.org/index.php/installation_guide
+
+T470-specific installation: https://wiki.archlinux.org/index.php/Lenovo_ThinkPad_T470
+
+* Main installation
+** Boot from the Arch installer USB
+** Connect to the internet
+An internet connection is required for installation. Make sure you are connected to the internet:
+> ping google.com
+
+** Update the system clock
+> timedatectl set-ntp true
+
+** Partition the disks
+> parted --align optimal /dev/nvme0n1
+> mklabel gpt
+> mkpart ESP fat32 1MiB 513MiB
+> set 1 boot on
+> mkpart primary linux-swap 513MiB 5GiB
+> mkpart primary ext4 5GiB 30GiB
+> mkpart primary ext4 30GiB 100%
+> quit
+
+** Format the partitions
+> mkfs.fat -F32 /dev/nvme0n1p1
+> mkswap /dev/nvme0n1p2
+> swapon /dev/nvme0n1p2
+> mkfs.ext4 /dev/nvme0n1p3
+> mkfs.ext4 /dev/nvme0n1p4
+
+** Mount the file systems
+> mount /dev/nvme0n1p3 /mnt
+> mkdir -p /mnt/boot/efi
+> mount /dev/nvme0n1p1 /mnt/boot/efi
+> mkdir /mnt/home
+> mount /dev/nvme0n1p4 /mnt/home
+
+** Select the mirrors
+> cp /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.backup
+> rankmirrors -n 6 /etc/pacman.d/mirrorlist.backup > /etc/pacman.d/mirrorlist
+
+NOTE: You can interrupt the last command (C-c) after a few minutes. The best mirrors will already have been selected.
+
+** Install the base packages
+> pacstrap /mnt base base-devel
+
+** Fstab
+> genfstab -U /mnt >> /mnt/etc/fstab
+
+NOTE: Check the resulting file in /mnt/etc/fstab and make sure it covers all partitions.
+
+** Chroot
+> arch-chroot /mnt
+
+** Time zone
+> ln -sf /usr/share/zoneinfo/Canada/Eastern /etc/localtime
+> hwclock --systohc
+
+** Locale
+Uncomment en_US.UTF-8 UTF-8 in /etc/locale.gen:
+> nano /etc/locale.gen
+
+> locale-gen
+> echo LANG=en_US.UTF-8 > /etc/locale.conf
+
+** Hostname
+> echo pholi-arch > /etc/hostname
+
+In /etc/hosts, add (> nano /etc/hosts):
+127.0.0.1	localhost
+::1		localhost
+127.0.1.1	pholi-arch.localdomain pholi-arch
+
+** Root password
+> passwd
+
+** Add user
+> useradd -m pholi
+> passwd pholi
+
+Add pholi to sudoers:
+> pacman -S vim
+> visudo
+  1. Go to the line starting with "root".
+  2. Press [Y] twice to yank it.
+  3. Go to the next line and press [P] to paste it.
+  4. Use [X] to delete "root" from that line.
+  5. Press [I] to enter insert mode, and replace the deleted "root" by "pholi".
+  6. Press [Esc], then type ":wq", then press [Enter].
+
+** Boot loader and Intel microcode
+> pacman -S grub efibootmgr
+> grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=grub --recheck
+> grub-mkconfig -o /boot/grub/grub.cfg
+
+Add Intel microcode:
+> pacman -S intel-ucode
+> grub-mkconfig -o /boot/grub/grub.cfg
+
+** Xfce desktop environment
+> pacman -S xorg xfce4
+
+If prompted to choose between libglvnd and nvidia-340xx-utils, choose the former.
+
+** Reboot
+> exit
+> umount /dev/nvme0n1p1
+> umount /dev/nvme0n1p4
+> umount /dev/nvme0n1p3
+> swapoff /dev/nvme0n1p2
+> shutdown now
+
+Remove the Arch installer USB and power the computer back on. After entering the username and password, start Xfce:
+> startxfce4
+
+At the prompt when starting Xfce for the first time: choose "Use default config" instead of "One empty pane".
+
+** Ethernet
+Find the ethernet interface name (e.g., enp0s31f6):
+> ip link
+
+Enable and start it:
+> sudo systemctl enable dhcpcd@enp0s31f6.service
+> sudo systemctl start dhcpcd@enp0s31f6.service
+
+** Wireless
+Find the wireless interface name (e.g., wlp4s0):
+> ip link
+
+Enable the wireless interface:
+> sudo ip link set wlp4s0 up
+
+NetworkManager will be used to manage connections:
+> sudo pacman -S networkmanager network-manager-applet
+> sudo systemctl enable NetworkManager.service
+> sudo systemctl start NetworkManager.service
+
+** Mirrors
+Get mirror list from https://www.archlinux.org/mirrorlist and replace the mirrors in /etc/pacman.d/mirrorlist.
+
+** trizen (AUR helper)
+> cd ~
+> sudo pacman -S git
+> git clone https://aur.archlinux.org/trizen.git
+> cd trizen
+> makepkg -si
+> cd ..
+> rm -rf trizen
+
+NOTE: Always get the non-git version of a package if possible. While non-git is not as bleeding edge as git, it is usually more stable.
+
+** Color profile
+Source of the color profile: https://www.notebookcheck.net/Lenovo-ThinkPad-T470-Core-i5-Full-HD-Notebook-Review.198130.0.html
+
+Put the file ".N140HCA_EAB_01.icm" in ~/.
+
+> trizen -S xcalib
+
+Put script .xcalibloop.sh in ~/, make it executable (> chmod +x .xcalibloop.sh) and add it to Application Autostart:
+Name: xcalibloop
+Command: bash /home/pholi/.xcalibloop.sh
+
+Add command to Application Autostart:
+- Name: Color profile
+- Description:
+- Command: bash -c "sleep 10; xcalib ~/.N140HCA_EAB_01.icm"
+
+** Encryption
+See: https://wiki.archlinux.org/index.php/ECryptfs#Encrypting_a_home_directory
+NOTE: This encryption scheme only encrypts ~/.
+
+> sudo pacman -S ecryptfs-utils lsof rsync
+> reboot
+
+Log in with root and don't start Xfce. Make sure pholi is logged out by checking that the following command has no output:
+> ps -U pholi
+
+Execute these two commands and follow the instructions:
+> modprobe ecryptfs
+> ecryptfs-migrate-home -u pholi
+
+When it is done:
+> su pholi
+> ecryptfs-mount-private
+> cd ~
+
+Check that ~/.ecryptfs/auto-mount, ~/.ecryptfs/auto-umount, and ~/.ecryptfs/wrapped-passphrase exist. In /etc/pam.d/system-auth do the following (> sudo nano /etc/pam.d/system-auth):
+1. AFTER the line "auth required pam_unix.so" add "auth required pam_ecryptfs.so unwrap"
+2. ABOVE the line "password required pam_unix.so" add "password optional pam_ecryptfs.so"
+3. AFTER the line "session required pam_unix.so" add "session optional pam_ecryptfs.so unwrap"
+
+If it exists, delete the file ~/pholi.r4nd0mch4r4ct3r5.
+
+> exit
+> reboot
+
+** Lockscreen
+> sudo pacman -S xscreensaver
+
+Open Screensaver from the menu to activate it. To enable lock for suspend write this text in /etc/systemd/system/lock.service (> sudo nano /etc/systemd/system/lock.service):
+
+[Unit]
+Description=Lock X session
+Before=suspend.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/xflock4
+
+[Install]
+WantedBy=suspend.target
+
+Then enable it:
+> sudo systemctl enable lock
+
+To prevent Xscreensaver from starting when there is a fullscreen window, put script .xscreensaverstopper.sh in ~/, make it executable (> chmod +x .xscreensaverstopper.sh) and add it to Application Autostart:
+Name: xscreensaverstopper
+Command: bash /home/pholi/.xscreensaverstopper.sh
+
+To ensure that everything works correctly, the following settings are needed for Xfce4 Power Manager and Xscreensaver (display shuts down and locks after 10 minutes):
+
+*** Xfce4 Power Manager
+General tab:
+- When laptop lid is closed: SUSPEND/SUSPEND
+- Status notifications: ON
+- System tray icon: ON
+System tab:
+- Lock screen when system is going to sleep: ON
+Display:
+- NEVER everywhere except "switch off after 10 minutes"
+
+*** Xscreensaver
+- Mode: blank screen only
+- Blank after: 10 minutes
+- Lock screen: ON, after 0 minutes
+- Power management enabled: ON (10/10/10)
+- Quick power-off in blank only mode: ON
+
+* Post-installation
+** Firefox (browser)
+> sudo pacman -S firefox
+
+If prompted, choose libx264 and ttf-dejavu.
+
+Add-ons:
+- uBlock Origin
+- Reddit Enhancement Suite
+- No Coin
+- The Camelizer
+- Privacy Badger
+
+In about:preferences:
+- General tab:
+  - Always check if Firefox is your default browser: ON
+  - When Firefox starts: Show a blank page
+  - Check your spelling as you type: OFF
+  - Downloads: Always ask you where to save files
+- Search tab:
+  - One-Click Search Engines: Remove everything except Google
+- Privacy & Security tab:
+  - Use Tracking Protection to block known trackers: Always
+  - Send websites a “Do Not Track” signal that you don’t want to be tracked: Always
+  - Allow Firefox to send technical and interaction data to Mozilla: OFF
+  - Allow Firefox to install and run studies: OFF
+  - Allow Firefox to send crash reports to Mozilla: OFF
+
+First-party isolation:
+1. Load the URL about:config?filter=privacy.firstparty.isolate
+2. Double-click on privacy.firstparty.isolate to set the preference to true
+
+Disable all push notifications:
+1. Load the URL about:config?filter=dom.webnotifications.enabled
+2. Double-click on dom.webnotifications.enabled to set the preference to false
+
+Import bookmarks: Library > Bookmarks > Show All Bookmarks > Import and Backup > Import Bookmarks from HTML
+
+** Printing
+> trizen -S brother-hl3170cdw
+> sudo pacman -S cups cups-pdf
+> sudo systemctl enable org.cups.cupsd.service
+> sudo systemctl start org.cups.cupsd.service
+> sudo gpasswd -a pholi lp
+> sudo gpasswd -a pholi sys
+> sudo gpasswd -a root lp
+> sudo gpasswd -a root sys
+
+In browser, enter "localhost:631", then add the networked printer. Configure it and make it the default printer (Administration > Manage Printers > PrinterName > Set As Server Default).
+
+** Firewall
+> sudo pacman -S ufw gufw
+
+Configuration: Open it and start it.
+
+** Dropbox (cloud service)
+> trizen -S dropbox
+
+Configuration:
+- Manually start Dropbox.
+- Right-click the Dropbox panel icon and select Preferences, then check the box "Start Dropbox on system startup".
+- Sign in.
+
+NOTE: This checkbox may uncheck itself, but the startup behavior should not be affected.
+
+** Thunderbird (mail client)
+> sudo pacman -S thunderbird
+
+Before setting up any mailbox:
+- In Preferences > Security > Junk make sure "Enable adaptive junk filter logging" is unchecked.
+- In Preferences > Advanced > General make sure that "Message Store Type for new accounts" is set to "File per message (maildir)".
+- Preferences > Privacy > Tell sites that I do not want to be tracked: ON
+
+Add-ons:
+- FireTray (minimize Thunderbird in tray)
+- Manually sort folders (reorder mailboxes)
+
+Start Thunderbird minimized:
+- Add Thunderbird to Application Autostart (Name: Thunderbird; Command: thunderbird)
+- FireTray preferences > Start application hidden to tray: ON
+
+Red color for new emails:
+- Right-click the Thunderbird icon in the tray > Preferences > Mail: Display new message count text color: RED
+- Right-click the Thunderbird icon in the tray > Preferences > Mail: Include subfolders: NO
+
+Import RSS feeds. Settings > Check for new articles every 10 minutes.
+
+For each account:
+- Settings > Junk Settings: Enable adaptive junk mail controls for this account: OFF
+- Settings > Server Settings: Empty trash on exit: ON (also do this for the RSS feeds)
+
+To import Polymtl emails, suscribe to all the folders (in "Manage folder subscriptions").
+
+*** Gmail Server Settings (IMAP)
+Server Type: IMAP Mail Server
+Server Name: imap.gmail.com
+Port: 993
+User Name: [email]
+Connection security: SSL/TLS
+Authentication method: OAuth2
+
+*** Gmail Server Settings (STMP)
+Description: Google Mail
+Server Name: stmp.gmail.com
+Port: 465
+User Name: [email]
+Authentication method: OAuth2
+Connection security: SSL/TLS
+
+*** Polymtl Server Settings (IMAP)
+Server Type: IMAP Mail Server
+Server Name: imap.polymtl.ca
+Port: 143
+User Name: [username]
+Connection security: STARTTLS
+Authentication method: Normal password
+
+*** Polymtl Server Settings (STMP)
+Description: Polymtl
+Server Name: stmp.polymtl.ca
+Port: 587
+User Name: [username]
+Authentication method: Normal password
+Connection security: STARTTLS
+
+** Pidgin (IM client)
+*** Installation
+> sudo pacman -S pidgin
+> trizen -S purple-facebook
+
+*** Adding Facebook account
+Protocol: Facebook
+Username: philippe.olivier.42
+Password: [password]
+Remember password: yes
+
+*** Configuration
+- Show previous conversations: Tools > Plugins > History
+- Status: Invisible
+- Right-click on tray icon: Blink on new message: ON
+- Hide new IM conversations: ALWAYS
+- Close conversations with the Escape key: ON
+- Browser: Firefox
+- Mute sounds: ON
+
+*** Application Autostart
+Name: Pidgin
+Description:
+Command: pidgin
+
+** Emacs (text editor)
+> sudo pacman -S emacs
+
+Put the .emacs.d directory in ~/.
+
+** Transmission (bittorrent client)
+> sudo pacman -S transmission-gtk
+
+*** Configuration
+- Speed: limit upload
+- Downloading: specify directories
+
+** Private Internet Access (VPN)
+> trizen -S private-internet-access-vpn
+> sudo pacman -S networkmanager-openvpn
+
+The login file must have the username on the first line and the password on the second line.
+> sudo emacs /etc/private-internet-access/login.conf
+USERNAME
+PASSWORD
+
+> sudo chmod 0600 /etc/private-internet-access/login.conf
+> sudo chown root:root /etc/private-internet-access/login.conf
+
+> sudo pia -a
+> sudo systemctl restart NetworkManager.service
+
+** eduroam
+Security: WPA & WPA2 Enterprise
+Authentification: Protected EAP (PEAP)
+CA certificate: entrust_g2_ca.cer
+PEAP version: Automatic
+Inner authentication: MSCHAPv2
+Username: [username]@polymtl.ca
+Password: [password]
+
+** Thunar (file manager)
+Install additional packages:
+> sudo pacman -S catfish file-roller mlocate thunar-archive-plugin thunar-media-tags-plugin
+
+View > View as Detailed List
+Left pane: View > Shortcuts (File System, pholi, Trash)
+
+Start Catfish and in settings select "Update Search Index" to speed up searches.
+
+To integrate Catfish in Thunar, in Thunar go to Edit > Configure custom actions > Add:
+Name: Search
+Command: catfish --path=%f
+Icon: All icons > edit-find
+File pattern: *
+Check all boxes to search for all types of files and directories
+
+** TLP (power management)
+> sudo pacman -S tlp
+> sudo systemctl enable tlp.service
+> sudo systemctl enable tlp-sleep.service
+> sudo systemctl mask systemd-rfkill.service
+> sudo systemctl mask systemd-rfkill.socket
+
+** Terminal
+Right-click the background and uncheck "Show Menubar".
+
+** Okular (PDF reader and image viewer)
+> sudo pacman -S okular
+
+If prompted, choose phonon-qt5-vlc.
+
+Settings > Show toolbar: OFF
+Settings > Configure Okular: Obey DRM limitations: OFF
+Settings > Configure Okular: Open new files in tabs: ON
+
+Right-click in the leftmost pane: Small icons: ON
+
+** VirtualBox
+> sudo pacman -S virtualbox virtualbox-guest-iso virtualbox-host-modules-arch
+
+File > Preferences > Default Machine Folder: "~/.VirtualBox_VMs"
+
+** Gecode
+Reference (includes makefile example): http://www.imada.sdu.dk/~marco/Misc/Gecode/gecode.html#orgheadline1
+
+Installing:
+> cd /opt
+> sudo git clone https://github.com/Gecode/gecode.git
+> cd gecode
+> sudo ./configure --prefix=${PWD}
+> sudo make
+
+Add the following line to ~/.bashrc:
+export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/opt/gecode
+
+Updating:
+> cd /opt/gecode
+> sudo git pull
+> sudo make
+
+** CPLEX
+Download the CPLEX binary from IBM, and make sure that it installs in /opt.
+
+> chmod +x cplex_studio128.linux-x86-64.bin
+> sudo ./cplex_studio128.linux-x86-64.bin
+
+** Other packages
+*** Arch
+dosfstools (format in FAT)
+gimp (graphics editor)
+gparted (GUI for formatting)
+gvfs (trash can)
+htop (process viewer)
+inkscape (SVG editor)
+leafpad (lightweight text editor)
+libreoffice-fresh (office suite)
+lm_sensors xsensors (hardware monitoring)
+openssh sshpass (secure shell)
+python-unidecode python-matplotlib python-numpy python-scipy (Python3 libraries)
+qpdf (PDF manipulation)
+texlive-core texlive-bin texlive-most (LaTeX)
+unrar unzip (archiving tools)
+valgrind kcachegrind (debugging and profiling)
+veracrypt (encryption)
+vlc phonon-qt5-vlc (media player)
+wget (network utility)
+xclip (CLI to clipboard)
+xfce4-screenshooter (take screenshots)
+xfce4-taskmanager (task manager)
+
+*** AUR
+jabref (BibTeX GUI)
+minizinc-ide (MiniZinc)
+neofetch (CLI system information tool)
+
+** Other settings
+*** Bash
+To open any file from the terminal, the following command can be used:
+> xdg-open some_file.pdf
+
+To create a simple alias, add the following line to ~/.bashrc:
+alias open='xdg-open &>/dev/null'
+
+* Panel
+NOTE: Each subsection represents, in order, the items of the panel.
+
+** Whisker Menu
+> sudo pacman -S xfce4-whiskermenu-plugin
+
+[Super L] (Windows key) shortcut: Keyboard > Application Shortcuts, /usr/bin/xfce4-popup-whiskermenu
+
+Configuration:
+- Category icon size: None
+- Recently used, amount of items: 0
+- Manually remove all from favorites
+
+** Window Buttons
+Switch windows using the mouse wheel: OFF
+
+** Separator
+
+** Keyboard Layouts
+> sudo pacman -S xfce4-xkb-plugin
+
+Show layout as: system
+Layout name: language
+Manage layout globally
+
+** Notification Area
+Show frame: OFF
+
+** PulseAudio Plugin
+> sudo pacman -S xfce4-pulseaudio-plugin pavucontrol pulseaudio pulseaudio-alsa xfce4-notifyd
+
+** Weather Update
+> sudo pacman -S xfce4-weather-plugin
+
+Tooltip style: verbose
+Scrollbox: keep only temperature
+
+** Clock
+Format: Custom format: %a %d %b %H:%M
+
+* Settings Manager
+** Desktop
+Solid color (RGB: 58/110/165)
+Style: None
+Include application menu on desktop right click: OFF
+Default icons: Unselect all
+
+** File Manager
+Format: Today at...
+
+** Preferred Applications
+- Firefox
+- Thunderbird
+- Thunar
+- Xfce Terminal
+
+** Window Manager Tweaks
+Cycle through windows in a list: ON (smaller alt-tab icons)
+Raise windows when any mouse button is pressed: OFF (allows scrolling on background windows)
+
+** Workspaces
+Number of workspaces: 1
+
+** Keyboard
+Layout: Use system defaults: OFF
+Keyboard layout: Add French (Canada) Canadian Multilingual
+Change layout option: Alt+Shift
+
+** Mouse and Touchpad
+Tap touchpad to click: ON
+
+** Removable Drives and Media
+Mount removable drives when hot-plugged: ON
+
+* Notes
+** pacman
+Installing packages:
+> sudo pacman -S [packages]
+
+Updating packages:
+> sudo pacman -Syu
+
+Removing and purging packages:
+> sudo pacman -Rns [packages]
+
+Displaying a list of unused packages (orphans):
+> pacman -Qtdq
+
+Removing unused packages (orphans):
+> sudo pacman -Rns $(pacman -Qtdq)
+
+** trizen
+Updating packages:
+> trizen -Syu
