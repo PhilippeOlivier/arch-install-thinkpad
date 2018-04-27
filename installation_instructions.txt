@@ -714,6 +714,7 @@ _________________
 
   - Speed: limit upload
   - Downloading: specify directories
+  - Show Transmission icon in the notification area: ON
 
 
 3.9 Private Internet Access (VPN)
@@ -782,7 +783,7 @@ _________________
 3.13 Terminal
 ~~~~~~~~~~~~~
 
-  Right-click the background and uncheck "Show Menubar".
+  Edit > Preferences > Appearance > Display menubar in new windows: OFF
 
 
 3.14 Okular (PDF reader and image viewer)
@@ -846,7 +847,7 @@ _________________
 3.18.1 Arch
 -----------
 
-  dosfstools (format in FAT)
+  dosfstools exfat-utils ntfs-3g (Microsoft formats)
   gimp (graphics editor)
   gparted (GUI for formatting)
   gvfs (trash can)
@@ -858,7 +859,9 @@ _________________
   openssh sshpass (secure shell)
   python-unidecode python-matplotlib python-numpy python-scipy
   python-pip python2-pip (Python libraries and modules)
+  python2-lxml pstoedit (textext dependencies)
   qpdf (PDF manipulation)
+  sbcl (Common Lisp)
   texlive-core texlive-bin texlive-most (LaTeX)
   unrar unzip (archiving tools)
   valgrind kcachegrind (debugging and profiling)
@@ -876,6 +879,7 @@ _________________
   jabref (BibTeX GUI)
   minizinc-ide (MiniZinc)
   neofetch (CLI system information tool)
+  textext (LaTeX extension for Inkscape)
 
 
 3.19 Other settings
@@ -1005,7 +1009,7 @@ _________________
 
   Layout: Use system defaults: OFF
   Keyboard layout: Add French (Canada) Canadian Multilingual
-  Change layout option: Alt+Shift
+  Change layout option: Left Alt + Left Shift
 
 
 5.7 Mouse and Touchpad

@@ -415,6 +415,7 @@ Put the .emacs.d directory in ~/.
 *** Configuration
 - Speed: limit upload
 - Downloading: specify directories
+- Show Transmission icon in the notification area: ON
 
 ** Private Internet Access (VPN)
 > trizen -S private-internet-access-vpn
@@ -464,7 +465,7 @@ Check all boxes to search for all types of files and directories
 > sudo systemctl mask systemd-rfkill.socket
 
 ** Terminal
-Right-click the background and uncheck "Show Menubar".
+Edit > Preferences > Appearance > Display menubar in new windows: OFF
 
 ** Okular (PDF reader and image viewer)
 > sudo pacman -S okular
@@ -508,7 +509,7 @@ Download the CPLEX binary from IBM, and make sure that it installs in /opt.
 
 ** Other packages
 *** Arch
-dosfstools (format in FAT)
+dosfstools exfat-utils ntfs-3g (Microsoft formats)
 gimp (graphics editor)
 gparted (GUI for formatting)
 gvfs (trash can)
@@ -519,7 +520,9 @@ libreoffice-fresh (office suite)
 lm_sensors xsensors (hardware monitoring)
 openssh sshpass (secure shell)
 python-unidecode python-matplotlib python-numpy python-scipy python-pip python2-pip (Python libraries and modules)
+python2-lxml pstoedit (textext dependencies)
 qpdf (PDF manipulation)
+sbcl (Common Lisp)
 texlive-core texlive-bin texlive-most (LaTeX)
 unrar unzip (archiving tools)
 valgrind kcachegrind (debugging and profiling)
@@ -534,6 +537,7 @@ xfce4-taskmanager (task manager)
 jabref (BibTeX GUI)
 minizinc-ide (MiniZinc)
 neofetch (CLI system information tool)
+textext (LaTeX extension for Inkscape)
 
 ** Other settings
 *** Bash
@@ -609,7 +613,7 @@ Number of workspaces: 1
 ** Keyboard
 Layout: Use system defaults: OFF
 Keyboard layout: Add French (Canada) Canadian Multilingual
-Change layout option: Alt+Shift
+Change layout option: Left Alt + Left Shift
 
 ** Mouse and Touchpad
 Tap touchpad to click: ON
