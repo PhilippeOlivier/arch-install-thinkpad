@@ -156,14 +156,14 @@ NetworkManager will be used to manage connections:
 ** Mirrors
 Get mirror list from https://www.archlinux.org/mirrorlist and replace the mirrors in /etc/pacman.d/mirrorlist.
 
-** trizen (AUR helper)
+** yay (AUR helper)
 > cd ~
-> sudo pacman -S git
-> git clone https://aur.archlinux.org/trizen.git
-> cd trizen
+> sudo pacman -S git go
+> git clone https://aur.archlinux.org/yay.git
+> cd yay
 > makepkg -si
 > cd ..
-> rm -rf trizen
+> rm -rf yay
 
 NOTE: Always get the non-git version of a package if possible. While non-git is not as bleeding edge as git, it is usually more stable.
 
@@ -172,7 +172,7 @@ Source of the color profile: https://www.notebookcheck.net/Lenovo-ThinkPad-T470-
 
 Put the file ".N140HCA_EAB_01.icm" in ~/.
 
-> trizen -S xcalib
+> yay -S xcalib
 
 Put script .xcalibloop.sh in ~/, make it executable (> chmod +x .xcalibloop.sh) and add it to Application Autostart:
 Name: xcalibloop
@@ -266,6 +266,9 @@ Add-ons:
 - No Coin
 - The Camelizer
 - Privacy Badger
+- uMatrix
+- Facebook Container
+- Google Search "View Image" Button
 
 In about:preferences:
 - General tab:
@@ -290,10 +293,17 @@ Disable all push notifications:
 1. Load the URL about:config?filter=dom.webnotifications.enabled
 2. Double-click on dom.webnotifications.enabled to set the preference to false
 
+Enable [Backspace] to go to previous page: about:config > browser.action_backspace 0
+
 Import bookmarks: Library > Bookmarks > Show All Bookmarks > Import and Backup > Import Bookmarks from HTML
 
+Start Firefox docked:
+> sudo pacman -S alltray
+- Add Firefox to Application Autostart (Name: Firefox; Command: alltray firefox)
+
 ** Printing
-> trizen -S brother-hl3170cdw
+For home:
+> yay -S brother-hl3170cdw
 > sudo pacman -S cups cups-pdf
 > sudo systemctl enable org.cups.cupsd.service
 > sudo systemctl start org.cups.cupsd.service
@@ -302,6 +312,9 @@ Import bookmarks: Library > Bookmarks > Show All Bookmarks > Import and Backup >
 > sudo gpasswd -a root lp
 > sudo gpasswd -a root sys
 
+For school (connect with USB, HP LaserJet 1320n):
+> yay -S hplip
+
 In browser, enter "localhost:631", then add the networked printer. Configure it and make it the default printer (Administration > Manage Printers > PrinterName > Set As Server Default).
 
 ** Firewall
@@ -309,80 +322,10 @@ In browser, enter "localhost:631", then add the networked printer. Configure it 
 
 Configuration: Open it and start it.
 
-** Dropbox (cloud service)
-> trizen -S dropbox
-
-Configuration:
-- Manually start Dropbox.
-- Right-click the Dropbox panel icon and select Preferences, then check the box "Start Dropbox on system startup".
-- Sign in.
-
-NOTE: This checkbox may uncheck itself, but the startup behavior should not be affected.
-
-** Thunderbird (mail client)
-> sudo pacman -S thunderbird
-
-Before setting up any mailbox:
-- In Preferences > Security > Junk make sure "Enable adaptive junk filter logging" is unchecked.
-- In Preferences > Advanced > General make sure that "Message Store Type for new accounts" is set to "File per message (maildir)".
-- Preferences > Privacy > Tell sites that I do not want to be tracked: ON
-
-Add-ons:
-- FireTray (minimize Thunderbird in tray)
-- Manually sort folders (reorder mailboxes)
-
-Start Thunderbird minimized:
-- Add Thunderbird to Application Autostart (Name: Thunderbird; Command: thunderbird)
-- FireTray preferences > Start application hidden to tray: ON
-
-Red color for new emails:
-- Right-click the Thunderbird icon in the tray > Preferences > Mail: Display new message count text color: RED
-- Right-click the Thunderbird icon in the tray > Preferences > Mail: Include subfolders: NO
-
-Import RSS feeds. Settings > Check for new articles every 10 minutes.
-
-For each account:
-- Settings > Junk Settings: Enable adaptive junk mail controls for this account: OFF
-- Settings > Server Settings: Empty trash on exit: ON (also do this for the RSS feeds)
-
-To import Polymtl emails, suscribe to all the folders (in "Manage folder subscriptions").
-
-*** Gmail Server Settings (IMAP)
-Server Type: IMAP Mail Server
-Server Name: imap.gmail.com
-Port: 993
-User Name: [email]
-Connection security: SSL/TLS
-Authentication method: OAuth2
-
-*** Gmail Server Settings (STMP)
-Description: Google Mail
-Server Name: stmp.gmail.com
-Port: 465
-User Name: [email]
-Authentication method: OAuth2
-Connection security: SSL/TLS
-
-*** Polymtl Server Settings (IMAP)
-Server Type: IMAP Mail Server
-Server Name: imap.polymtl.ca
-Port: 143
-User Name: [username]
-Connection security: STARTTLS
-Authentication method: Normal password
-
-*** Polymtl Server Settings (STMP)
-Description: Polymtl
-Server Name: stmp.polymtl.ca
-Port: 587
-User Name: [username]
-Authentication method: Normal password
-Connection security: STARTTLS
-
 ** Pidgin (IM client)
 *** Installation
 > sudo pacman -S pidgin
-> trizen -S purple-facebook
+> yay -S purple-facebook
 
 *** Adding Facebook account
 Protocol: Facebook
@@ -398,6 +341,7 @@ Remember password: yes
 - Close conversations with the Escape key: ON
 - Browser: Firefox
 - Mute sounds: ON
+- Preferences > Conversations > Highlight misspelled words: OFF
 
 *** Application Autostart
 Name: Pidgin
@@ -409,6 +353,9 @@ Command: pidgin
 
 Put the .emacs.d directory in ~/.
 
+Start Emacs docked:
+- Add Emacs to Application Autostart (Name: Emacs; Command: alltray emacs)
+
 ** Transmission (bittorrent client)
 > sudo pacman -S transmission-gtk
 
@@ -418,7 +365,7 @@ Put the .emacs.d directory in ~/.
 - Show Transmission icon in the notification area: ON
 
 ** Private Internet Access (VPN)
-> trizen -S private-internet-access-vpn
+> yay -S private-internet-access-vpn
 > sudo pacman -S networkmanager-openvpn
 
 The login file must have the username on the first line and the password on the second line.
@@ -440,6 +387,20 @@ PEAP version: Automatic
 Inner authentication: MSCHAPv2
 Username: [username]@polymtl.ca
 Password: [password]
+
+Polymtl VPN:
+> sudo pacman -S networkmanager-openconnect
+
+Download the entrust_g2_ca.cer certificate and change the extention to .pem.
+
+Network Connections > Add a new connection > Cisco AnyConnect Compatible VPN (openconnect):
+Connection name: Polymtl VPN
+VNP Protocol: Cisco AnyConnect
+Gateway: ssl.vpn.polymtl.ca
+CA Certificate: entrust_g2_ca.pem
+
+When connecting:
+Group: PolySSL
 
 ** Thunar (file manager)
 Install additional packages:
@@ -476,30 +437,14 @@ Settings > Show toolbar: OFF
 Settings > Configure Okular: Obey DRM limitations: OFF
 Settings > Configure Okular: Open new files in tabs: ON
 
+Settings > Configure Okular > Annotations: Yellow highlighter, light blue highlighter, Pop-up Note, Inline Note
+
 Right-click in the leftmost pane: Small icons: ON
 
 ** VirtualBox
 > sudo pacman -S virtualbox virtualbox-guest-iso virtualbox-host-modules-arch
 
 File > Preferences > Default Machine Folder: "~/.VirtualBox_VMs"
-
-** Gecode
-Reference (includes makefile example): http://www.imada.sdu.dk/~marco/Misc/Gecode/gecode.html#orgheadline1
-
-Installing:
-> cd /opt
-> sudo git clone https://github.com/Gecode/gecode.git
-> cd gecode
-> sudo ./configure --prefix=${PWD}
-> sudo make
-
-Add the following line to ~/.bashrc:
-export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/opt/gecode
-
-Updating:
-> cd /opt/gecode
-> sudo git pull
-> sudo make
 
 ** CPLEX
 Download the CPLEX binary from IBM, and make sure that it installs in /opt.
@@ -510,7 +455,7 @@ Download the CPLEX binary from IBM, and make sure that it installs in /opt.
 ** Other packages
 *** Arch
 dosfstools exfat-utils ntfs-3g (Microsoft formats)
-gimp (graphics editor)
+pinta (graphics editor)
 gparted (GUI for formatting)
 gvfs (trash can)
 htop (process viewer)
@@ -518,12 +463,13 @@ inkscape (SVG editor)
 leafpad (lightweight text editor)
 libreoffice-fresh (office suite)
 lm_sensors xsensors (hardware monitoring)
+onboard (virtual keyboard, just in case)
 openssh sshpass (secure shell)
-python-unidecode python-matplotlib python-numpy python-scipy python-pip python2-pip (Python libraries and modules)
-python2-lxml pstoedit (textext dependencies)
+python-matplotlib python-networkx python-numpy python-pip python2-pip python-scipy python-unidecode (Python libraries and modules)
+python2-lxml pstoedit (textext dependencies, for Inkscape)
 qpdf (PDF manipulation)
 sbcl (Common Lisp)
-texlive-core texlive-bin texlive-most (LaTeX)
+auctex texlive-core texlive-bin texlive-most (LaTeX)
 unrar unzip (archiving tools)
 valgrind kcachegrind (debugging and profiling)
 veracrypt (encryption)
@@ -546,6 +492,11 @@ To open any file from the terminal, the following command can be used:
 
 To create a simple alias, add the following line to ~/.bashrc:
 alias open='xdg-open &>/dev/null'
+
+*** Disable system beep
+Session and Startup > Application Autostart > Add
+Name: beep
+Command: xset b off
 
 * Panel
 NOTE: Each subsection represents, in order, the items of the panel.
@@ -638,6 +589,101 @@ Displaying a list of unused packages (orphans):
 Removing unused packages (orphans):
 > sudo pacman -Rns $(pacman -Qtdq)
 
-** trizen
+Cleaning pacman cache:
+> sudo pacman -S pacman-contrib
+> paccache -r
+
+** yay
 Updating packages:
-> trizen -Syu
+> yay -Syu
+
+** Misc.
+Cannot write on external hard drive: https://askubuntu.com/a/172671
+* Archive
+** Dropbox (cloud service)
+> yay -S dropbox
+
+Configuration:
+- Manually start Dropbox.
+- Right-click the Dropbox panel icon and select Preferences, then check the box "Start Dropbox on system startup".
+- Sign in.
+
+NOTE: This checkbox may uncheck itself, but the startup behavior should not be affected.
+
+** Thunderbird (mail client)
+> sudo pacman -S thunderbird
+
+Before setting up any mailbox:
+- Preferences > Security > Junk make sure "Enable adaptive junk filter logging" is unchecked.
+- Preferences > Advanced > General make sure that "Message Store Type for new accounts" is set to "File per message (maildir)".
+- Preferences > Privacy > Tell sites that I do not want to be tracked: ON
+- Preferences > Composition > Enable spell check as you type: OFF
+
+Add-ons:
+- Manually sort folders (reorder mailboxes)
+NOTE: Enabling add-ons which are "incompatible": Preferences > Preferences > Advanced > General > Config Editor > extensions.strictCompatibility == false
+
+Start Thunderbird docked:
+- Add Thunderbird to Application Autostart (Name: Thunderbird; Command: alltray thunderbird)
+
+Red color for new emails:
+- Right-click the Thunderbird icon in the tray > Preferences > Mail: Display new message count text color: RED
+- Right-click the Thunderbird icon in the tray > Preferences > Mail: Include subfolders: NO
+
+Import RSS feeds. Settings > Check for new articles every 10 minutes.
+
+For each account:
+- Settings > Junk Settings: Enable adaptive junk mail controls for this account: OFF
+- Settings > Server Settings: Empty trash on exit: ON (also do this for the RSS feeds)
+
+To import Polymtl emails, suscribe to all the folders (in "Manage folder subscriptions").
+
+*** Gmail Server Settings (IMAP)
+Server Type: IMAP Mail Server
+Server Name: imap.gmail.com
+Port: 993
+User Name: [email]
+Connection security: SSL/TLS
+Authentication method: OAuth2
+
+*** Gmail Server Settings (STMP)
+Description: Google Mail
+Server Name: stmp.gmail.com
+Port: 465
+User Name: [email]
+Authentication method: OAuth2
+Connection security: SSL/TLS
+
+*** Polymtl Server Settings (IMAP)
+Server Type: IMAP Mail Server
+Server Name: imap.polymtl.ca
+Port: 143
+User Name: [username]
+Connection security: STARTTLS
+Authentication method: Normal password
+
+*** Polymtl Server Settings (STMP)
+Description: Polymtl
+Server Name: stmp.polymtl.ca
+Port: 587
+User Name: [username]
+Authentication method: Normal password
+Connection security: STARTTLS
+
+** Gecode
+Reference (includes makefile example): http://www.imada.sdu.dk/~marco/Misc/Gecode/gecode.html#orgheadline1
+
+Installing:
+> cd /opt
+> sudo git clone https://github.com/Gecode/gecode.git
+> cd gecode
+> sudo ./configure --prefix=${PWD}
+> sudo make
+
+Add the following line to ~/.bashrc:
+export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/opt/gecode
+
+Updating:
+> cd /opt/gecode
+> sudo git pull
+> sudo make
