@@ -55,7 +55,9 @@ An internet connection is required for installation. Plug in an ethernet cable a
 Edit /etc/pacman.d/mirrorlist and put a suitable mirror at the top.
 
 ** Install the base packages
-> pacstrap /mnt base base-devel linux linux-firmware networkmanager
+> pacstrap /mnt base base-devel linux linux-firmware networkmanager linux-lts
+
+Linux-LTS is installed as a backup kernel.
 
 ** Fstab
 > genfstab -U /mnt >> /mnt/etc/fstab
@@ -93,7 +95,11 @@ In /etc/mkinitcpio.conf, the hooks must be: HOOKS=(base udev autodetect keyboard
 Install and configure GRUB:
 > pacman -S grub efibootmgr
 
-In /etc/default/grub uncomment "GRUB_ENABLE_CRYPTODISK=y".
+In /etc/default/grub:
+- Uncomment GRUB_ENABLE_CRYPTODISK=y
+- Uncomment GRUB_SAVEDEFAULT="true"
+- Edit GRUB_DEFAULT to GRUB_DEFAULT=y
+- Add the line GRUB_DISABLE_SUBMENU=y
 > grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=grub
 > grub-mkconfig -o /boot/grub/grub.cfg
 

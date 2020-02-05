@@ -187,6 +187,9 @@ _________________
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   > pacstrap /mnt base base-devel linux linux-firmware networkmanager
+    linux-lts
+
+  Linux-LTS is installed as a backup kernel.
 
 
 2.10 Fstab
@@ -251,7 +254,11 @@ _________________
   Install and configure GRUB:
   > pacman -S grub efibootmgr
 
-  In /etc/default/grub uncomment "GRUB_ENABLE_CRYPTODISK=y".
+  In /etc/default/grub:
+  - Uncomment GRUB_ENABLE_CRYPTODISK=y
+  - Uncomment GRUB_SAVEDEFAULT="true"
+  - Edit GRUB_DEFAULT to GRUB_DEFAULT=y
+  - Add the line GRUB_DISABLE_SUBMENU=y
   > grub-install --target=x86_64-efi --efi-directory=/boot
     --bootloader-id=grub
   > grub-mkconfig -o /boot/grub/grub.cfg
