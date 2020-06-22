@@ -54,8 +54,8 @@ An internet connection is required for installation. Plug in an ethernet cable a
 ** Select the mirrors
 Edit /etc/pacman.d/mirrorlist and put a suitable mirror at the top.
 
-** Install the base packages
-> pacstrap /mnt base base-devel linux linux-firmware networkmanager linux-lts
+** Install the base packages and a bit more
+> pacstrap /mnt base base-devel linux linux-firmware linux-lts networkmanager
 
 Linux-LTS is installed as a backup kernel.
 
@@ -89,7 +89,7 @@ In /etc/hosts, add:
 
 ** Configure mkinitcpio and create the initramfs image
 In /etc/mkinitcpio.conf, the hooks must be: HOOKS=(base udev autodetect keyboard keymap consolefont modconf block encrypt filesystems fsck)
-> mkinitcpio -p linux
+> mkinitcpio -P
 
 ** Boot loader and Intel microcode
 Install and configure GRUB:
@@ -143,9 +143,19 @@ Enable the wireless interface:
 > sudo ip link set wlp4s0 up
 
 NetworkManager will be used to manage connections:
+> sudo pacman -S networkmanager
 > sudo systemctl enable NetworkManager.service
 > sudo systemctl start NetworkManager.service
+> sudo systemctl mask systemd-resolved.service
+Remove the /etc/resolv.conf file (if it exists), then:
+> sudo echo "nameserver 8.8.8.8" > /etc/resolv.conf
+In /etc/NetworkManager/NetworkManager.conf, under the [main] section (create it if it does not exist) add:
+dns=none
+
+*** Old method (above method fixes DNS problems)
 > sudo pacman -S networkmanager
+> sudo systemctl enable NetworkManager.service
+> sudo systemctl start NetworkManager.service
 > sudo systemctl enable systemd-resolved.service
 > sudo systemctl start systemd-resolved.service
 > sudo ln -sf /run/systemd/resolve/stub-resolv.conf /etc/resolv.conf
@@ -160,10 +170,21 @@ In the case of DNS problems, it is possible to hardcode the DNS server.
 3. Prevent NetworkManager from overwriting /etc/resolv.conf:
    > sudo chattr +i /etc/resolv.conf
 
+** Dotfiles
+> sudo pacman -S stow
+
+To update all bash-related symlinks, for example, do:
+> stow -d ~/dotfiles -t ~ -R bash
+
+** Git
+> sudo pacman -S git
+
+Make sure that ~/.gitconfig is not present, then:
+> stow -d ~/dotfiles -t ~ -R git
+
 ** yay
 Install yay, an AUR helper:
 > cd ~
-> sudo pacman -S git
 > sudo pacman -S --asdeps go
 > git clone https://aur.archlinux.org/yay.git
 > cd yay
@@ -171,11 +192,14 @@ Install yay, an AUR helper:
 > cd ..
 > rm -rf yay
 
-NOTE: Always get the non-git version of a package if possible. While non-git is not as bleeding edge as git, it is usually more stable.
+Make sure that ~/.config/yay is not present, then:
+> stow -d ~/dotfiles -t ~ -R yay
+
+Note: Always get the non-git version of a package if possible. While non-git is not as bleeding edge as git, it is usually more stable.
 
 ** Fonts
 To cover most characters:
-> sudo pacman -S ttf-dejavu ttf-liberation noto-fonts noto-fonts-cjk noto-fonts-extra
+> sudo pacman -S noto-fonts noto-fonts-cjk noto-fonts-extra ttf-dejavu ttf-liberation
 
 Note: noto-fonts-emoji is not part of the installation, as displaying some of them in Emacs may cause a crash.
 
@@ -192,20 +216,22 @@ Note: noto-fonts-emoji is not part of the installation, as displaying some of th
 ** Touchpad
 > sudo pacman -S xf86-input-libinput
 
-Put the backup file /etc/X11/xorg.conf.d/10-touchpad.conf.
+Note: Put the backup file /etc/X11/xorg.conf.d/10-touchpad.conf.
 
 ** TRIM
 > sudo systemctl enable fstrim.timer
 
 ** Passwords and encryption
-> sudo pacman -S pass
+> sudo pacman -S gnupg pass
 
-Put the backup files ~/.gnupg and ~/.password-store.
+Make sure that ~/.gnupg and ~/.password-store are not present, then:
+> stow -d ~/dotfiles -t ~ -R encryption
 
-** Terminal
+** Terminal/bash
 > sudo pacman -S xterm
 
-Put the backup files ~/.Xresources and ~/.bashrc for the custom settings.
+Make sure that ~/.profile and any ~/.bash* files are not present. Then:
+> stow -d ~/dotfiles -t ~ -R bash
 
 ** Man pages
 > sudo pacman -S man-db man-pages
@@ -215,29 +241,51 @@ Source of the color profile: https://www.notebookcheck.net/Lenovo-ThinkPad-T470-
 
 > yay -S xcalib
 
-Put the backup file ~/.N140HCA_EAB_01.icm.
+Note: The color profile is located in ~/scripts/data and the xcalib command is executed by ~/.config/i3/config.
+
+** X
+Basic X packages:
+> sudo pacman -S xorg-server xorg-xinit xorg-xrdb
+
+Make sure that ~/.xinitrc and ~/.Xresources are not present. Then:
+> stow -d ~/dotfiles -t ~ -R x
+
+** XDG
+> sudo pacman -S xdg-user-dirs
+
+Make sure that ~/.config/mimeapps.list, ~/.config/user-dirs.dir, and ~/.config/user-dirs.locale are not present. Then:
+> stow -d ~/dotfiles -t ~ -R xdg
+
+Once all backup files and documents are added:
+> xdg-user-dirs-update
 
 ** i3
-Basic X and i3 packages:
-> sudo pacman -S xorg-xinit xorg-server i3-wm xbindkeys
+Basic i3 package:
+> sudo pacman -S i3-wm 
 
-Put the backup files ~/.xinitrc to start i3 with the command "startx", and ~/.config/i3/config to load all custom settings.
-
-For the lockscreen and suspend:
-> sudo pacman -S xorg-xset xautolock xss-lock i3lock xdotool xorg-xwininfo xorg-xdpyinfo
-
-Put the backup files ~/.screensaver.sh (and chmod +x it) and /etc/systemd/logind.conf for the custom screen locker.
-
-Install rofi, a lightweight menu:
-> sudo pacman -S rofi mlocate
-
-Install i3blocks, a status bar, and pango for markup/colors:
+Install i3blocks, a status bar:
 > sudo pacman -S i3blocks
 
-Put the backup file ~/.config/i3blocks/config for the i3blocks config, as well as ~/.config/i3blocks/*.sh (chmod +x them) for the blocklets.
+Make sure that ~/.config/i3 and ~/.config/i3blocks are not present. Then:
+> stow -d ~/dotfiles -t ~ -R i3
 
-For the calendar blocklet of i3blocks, put the backup file ~/.config/gsimplecal/config, and install gsimplecal:
+Allow use of the special keys (volume, brightness, etc):
+> sudo yay -S xbindkeys
+
+For the lockscreen and suspend:
+> sudo pacman -S i3lock xautolock xdotool xorg-xdpyinfo xorg-xset xorg-xwininfo xss-lock
+
+Note: Put the backup file /etc/systemd/logind.conf for the custom screen locker.
+Note: The screen saver script is located in ~/scripts/startup, and is executed by ~/.config/i3/config.
+
+Install rofi, a lightweight menu, and mlocate to find files:
+> sudo pacman -S mlocate rofi
+
+For the calendar blocklet, install:
 > sudo pacman -S gsimplecal
+Make sure that ~/.config/gsimplecal is not present. Then:
+> stow -d ~/dotfiles -t ~ -R i3
+Note: gsimplecal config is in i3 since it is its only use case.
 
 For the pacman updates blocklet, install:
 > sudo pacman -S pacman-contrib
@@ -248,11 +296,23 @@ For the battery blocklet, install:
 For the WiFi blocklet, install:
 > sudo pacman -S iw
 
+For the backup blocklet, install:
+> sudo pacman -S dialog
+
+For the idle blocklet, install:
+> sudo pacman -S xprintidle
+
 To take screenshots, install (shortcut F9 key):
 > sudo pacman -S lximage-qt
+Make sure that ~/.config/lximage-qt is not present. Then:
+> stow -d ~/dotfiles -t ~ -R lximage-qt
 
 For an external monitor, install (shortcut F7 key):
 > sudo pacman -S arandr
+Make sure that ~/.screenlayout is not present. Then:
+> stow -d ~/dotfiles -t ~ -R screenlayout
+
+For colorized output in pacman and yay, uncomment "Color" in /etc/pacman.conf.
 
 * Post-installation
 ** Thunar
@@ -260,10 +320,8 @@ Install additional packages:
 > sudo pacman -S thunar unrar unzip zip
 > sudo pacman -S --asdeps file-roller gvfs lrzip p7zip thunar-archive-plugin thunar-media-tags-plugin thunar-volman tumbler
 
-Settings:
-View > View as Detailed List
-Left pane: View > Shortcuts (File System, pholi, Trash)
-Format: Today at...
+Make sure that ~/.config/Thunar and ~/.config/xfce4/xfconf/xfce-perchannel-xml/thunar.xml are not present. Then:
+> stow -d ~/dotfiles -t ~ -R thunar
 
 ** Firefox
 > sudo pacman -S firefox
@@ -296,19 +354,20 @@ To access Gufw:
 ** Emacs
 > sudo pacman -S emacs
 
-Put the directory ~/.emacs.d.
+Make sure that ~/.emacs.d is not present. Then:
+> stow -d ~/dotfiles -t ~ -R emacs
 
 ** Email
-> sudo pacman -S notmuch msmtp msmtp-mta s-nail isync
+> sudo pacman -S isync msmtp msmtp-mta notmuch s-nail
 
-Put the backup files ~/.mail, ~/.mbsyncrc, ~/.msmtp.d, ~/.msmtprc, and ~/.notmuch-config.
+Make sure that ~/.mbsyncrc, ~/.msmtp.d, ~/.msmtprc, and ~/.notmuch-config are not present, and that ~/.mail is present, then:
+> stow -d ~/dotfiles -t ~ -R mail
 
 ** Transmission
 > sudo pacman -S transmission-gtk
 
-Settings:
-- Speed: limit upload
-- Downloading: specify directories
+Make sure that ~/.config/transmission is not present, then:
+> stow -d ~/dotfiles -t ~ -R transmission
 
 ** Commercial VPN
 The commercial VPN is Mullvad. Install the required packages:
@@ -329,7 +388,7 @@ Password: [password]
 Polymtl VPN:
 > sudo pacman -S networkmanager-openconnect
 
-To connect to the Polymtl VPN, execute the script ~/Documents/code/scripts/vpn_polymtl.sh
+To connect to the Polymtl VPN, execute the script ~/scripts/vpn_polymtl.sh
 
 ** TLP
 > sudo pacman -S tlp
@@ -338,11 +397,12 @@ To connect to the Polymtl VPN, execute the script ~/Documents/code/scripts/vpn_p
 > sudo systemctl mask systemd-rfkill.service
 > sudo systemctl mask systemd-rfkill.socket
 
-** Okular (PDF reader and image viewer)
+** Okular
 > sudo pacman -S okular
 
 If prompted, choose phonon-qt5-vlc.
 
+It is not clear where okular stores all its settings. So, manually do:
 Settings > Show Toolbar: OFF
 Settings > Show Navigation Panel: OFF
 Settings > Configure Okular > General Options: Obey DRM limitations: OFF
@@ -356,8 +416,14 @@ Settings > Configure Okular > Annotations: Yellow highlighter, light blue highli
 ** CPLEX
 Download the CPLEX binary from IBM, and make sure that it installs in /opt.
 
-> chmod +x cplex_studio128.linux-x86-64.bin
-> sudo ./cplex_studio128.linux-x86-64.bin
+> chmod +x cplex_studio1210.linux-x86-64.bin
+> sudo ./cplex_studio1210.linux-x86-64.bin
+
+** Audio recorder
+> yay -S audio-recorder
+
+Make sure that ~/.config/dconf/user is not present, then:
+> stow -d ~/dotfiles -t ~ -R audiorecorder
 
 ** KVM
 Make sure that everything is supported on the host machine: https://wiki.archlinux.org/index.php/KVM
@@ -376,39 +442,63 @@ Installing an OS on it (Debian in this case, with 2 cores and 4G RAM):
 Running a VM:
 > qemu-system-x86_64 -boot order=c -drive file=my_image_name,format=raw -smp 2 -m 4G
 
-** Other packages
-*** Partitioning
-> sudo pacman -S parted gparted
-> sudo pacman -S --asdeps dosfstools exfat-utils
+** cmus
+> sudo pacman -S cmus
 
-*** File systems
-> sudo pacman -S ntfs-3g
+Install all optional dependencies as dependencies.
+
+Make sure that ~/.config/cmus is not present, then:
+> stow -d ~/dotfiles -t ~ -R cmus
+
+** htop
+> sudo pacman -S htop
+
+Make sure that ~/.config/htop is not present, then:
+> stow -d ~/dotfiles -t ~ -R htop
+
+** LibreOffice
+> sudo pacman -S libreoffice-still
+
+Make sure that ~/.config/libreoffice is not present, then:
+> stow -d ~/dotfiles -t ~ -R libreoffice
+
+** SSH
+> sudo pacman -S openssh sshpass
+
+Make sure that ~/.ssh is not present, then:
+> stow -d ~/dotfiles -t ~ -R ssh
+
+** LaTeX
+> sudo pacman -S biber texlive-most
+> yay -S auctex jabref
+
+rendu ici, quelles configs?
+Remove these?: biber, jabref
+
+** VLC
+> sudo pacman -S vlc
+
+Make sure that ~/.config/vlc is not present, then:
+> stow -d ~/dotfiles -t ~ -R vlc
+
+** Python
+> sudo pacman -S python-matplotlib python-networkx python-numpy python-pandas python-pillow python-pip python-scikit-learn python-scipy
+
+** Other packages
+*** Partitioning and file systems
+> sudo pacman -S parted gparted ntfs-3g
+> sudo pacman -S --asdeps dosfstools exfat-utils
 > yay -S hfsprogs
 
-*** Network
-> sudo pacman -S curl openssh sshpass wget
-
-*** LaTeX
-> sudo pacman -S biber texlive-most
-> yay -S auctex-git jabref
-
-*** Coding
-> sudo pacman -S valgrind
-
-*** Python
-> sudo pacman -S python-matplotlib python-networkx python-numpy python-pip python-scipy
-
-*** Applications
-> sudo pacman -S discord htop libreoffice-still neofetch vlc youtube-dl
-
 *** Other utilities
-> sudo pacman -S dos2unix rsync udisks2
+> sudo pacman -S curl dos2unix rsync udisks2 valgrind wget youtube-dl
 
 *** Old applications (don't install by default)
+discord
+zoom
 kodi
 inkscape (SVG editor)
 pinta (graphics editor)
-qpdf (PDF manipulation)
 textext (AUR) (LaTeX extension for Inkscape) and its dependencies: python2-lxml pstoedit
 
 * Notes
@@ -445,6 +535,10 @@ Displaying a list of unused packages (orphans):
 Removing unused packages (orphans):
 > sudo pacman -Rns $(pacman -Qtdq)
 
+Pacman report:
+> sudo pacman -S pacutils
+> pacreport
+
 Cleaning pacman cache:
 > sudo pacman -S pacman-contrib
 > paccache -r
@@ -473,7 +567,7 @@ Close:
 > udisksctl unmount -b /dev/sdc1
 > udisksctl power-off -b /dev/sdc1
 
-** How to chroot into the system
+** Chroot into the system
 Insert the Arch USB, reboot and press [Enter] to boot with the Arch installer.
 
 Find the paths of the partitions (e.g., /dev/nvme0n1p1 for boot and /dev/nvme0n1p2 for root):
@@ -490,7 +584,5 @@ To leave:
 > umount -R /mnt
 > cryptsetup close cryptroot
 
-** Maybe todo later
-- Have a Facebook alert for new messages: https://fbchat.readthedocs.io/en/stable/
-- Power saving: https://wiki.archlinux.org/index.php/CPU_frequency_scaling
-- Power saving: https://wiki.archlinux.org/index.php/Undervolting_CPU
+** Downgrading packages
+https://wiki.archlinux.org/index.php/downgrading_packages
